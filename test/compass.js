@@ -54,9 +54,7 @@ if(!window.doT) {
         },
         process: function() {
             if((this.isMobile() || this.getParam().$c == "mobile") && this.renderedView != "mobile") {
-                var style=document.createElement('style');
-                style.innerHTML="body { display:none;}";
-                document.getElementsByTagName("head")[0].appendChild(style);
+
 
                 var price = $("div.price")[0].innerHTML;
                 var title = $("div.title")[0].innerHTML;
@@ -65,7 +63,7 @@ if(!window.doT) {
                 if(window.$compass.mobilePage == null) {
                     getFile("mobile-demo.html", function (response) {                    
                         var mobileTemplate = doT.template(response);
-                        var mobileOutput = mobileTemplate($compass.data);                    
+                        var mobileOutput = mobileTemplate($compass.data);                           
                         var mobileDoc = (new DOMParser).parseFromString(mobileOutput, 'text/html');
                         window.$compass.mobilePage = mobileDoc.documentElement.innerHTML;
                         window.document.documentElement.innerHTML= mobileDoc.documentElement.innerHTML;
@@ -111,3 +109,50 @@ function getFile(url, completeCallback) {
         }
     }, 0);
 }
+
+/* 
+ * DOMParser HTML extension 
+ * 2012-02-02 
+ * 
+ * By Eli Grey, http://eligrey.com 
+ * Public domain. 
+ * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK. 
+ */  
+
+/*! @source https://gist.github.com/1129031 */  
+/*global document, DOMParser*/  
+
+(function(DOMParser) {  
+    "use strict";  
+    var DOMParser_proto = DOMParser.prototype  
+      , real_parseFromString = DOMParser_proto.parseFromString;
+
+    // Firefox/Opera/IE throw errors on unsupported types  
+    try {  
+        // WebKit returns null on unsupported types  
+        if ((new DOMParser).parseFromString("", "text/html")) {  
+            // text/html parsing is natively supported  
+            return;  
+        }  
+    } catch (ex) {}  
+
+    DOMParser_proto.parseFromString = function(markup, type) {  
+        if (/^\s*text\/html\s*(?:;|$)/i.test(type)) {  
+            var doc = document.implementation.createHTMLDocument("")
+              , doc_elt = doc.documentElement
+              , first_elt;
+
+            doc_elt.innerHTML = markup;
+            first_elt = doc_elt.firstElementChild;
+
+            if (doc_elt.childElementCount === 1
+                && first_elt.localName.toLowerCase() === "html") {  
+                doc.replaceChild(first_elt, doc_elt);  
+            }  
+
+            return doc;  
+        } else {  
+            return real_parseFromString.apply(this, arguments);  
+        }  
+    };  
+}(DOMParser));
