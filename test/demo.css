@@ -1,0 +1,35 @@
+body {
+    background-color: #ccc;
+    margin: 0px;
+}
+.container {
+    width:960px;
+    margin: auto;
+    padding: -10px;
+    background-color: #fff;
+    display: block;
+    height: 100%;
+}
+
+.col {
+    width: 40%;
+    padding: 10px;
+    float: left;
+}
+
+.price, .title {
+    font-size:larger;
+    font-weight: bold;
+}
+
+.nav {
+    height:24px;
+    background-color: #EEE;
+    line-height: 24px;
+}
+
+.navitem a {
+    text-decoration: none;
+    font-size: 20px;
+    margin-right:20px;
+}
