@@ -12,22 +12,25 @@ if(!window.doT) {
     document.getElementsByTagName("head")[0].appendChild(script);
 }
 
+var style=document.createElement('style');
+style.innerHTML="body { display:none;}";
+document.getElementsByTagName("head")[0].appendChild(style);
+
 (function (window, undefined) {    
     var $compass = function () {
         if ( window === this ) {            
             return new $compass(); 
-        }       
-        
-
-        
+        }
         return this;
     };
     
     $compass.fn = $compass.prototype = {
-        pagetitle: null,
+        mobileTemplate: null,
+        dataTemplate: null,
         data: null,
         originalPage: null,
         mobilePage: null,
+        hideStyle: null,
         renderedView: "desktop",
         getElement: function(selector) {
             if (typeof properties === 'string') {
@@ -53,50 +56,58 @@ if(!window.doT) {
             return b;
         },
         process: function() {
-            if((this.isMobile() || this.getParam().$c == "mobile") && this.renderedView != "mobile") {
-
-
-                var price = $("div.price")[0].innerHTML;
-                var title = $("div.title")[0].innerHTML;
-                $compass.data = { "price": price, "title": title };
-                
+            if(this.mobileTemplate == null || this.mobileTemplate.length == 0) {
+                window.document.body.style.display="block";
+                return; 
+            }
+            if((window.$compass.isMobile() || window.$compass.getParam().$c == "mobile") && window.$compass.renderedView != "mobile" && window.$compass.getParam().$c != "desktop") {              
                 if(window.$compass.mobilePage == null) {
-                    getFile("mobile-demo.html", function (response) {                    
-                        var mobileTemplate = doT.template(response);
-                        var mobileOutput = mobileTemplate($compass.data);                           
-                        var mobileDoc = (new DOMParser).parseFromString(mobileOutput, 'text/html');
-                        window.$compass.mobilePage = mobileDoc.documentElement.innerHTML;
-                        window.document.documentElement.innerHTML= mobileDoc.documentElement.innerHTML;
-                        window.$compass.renderedView = "mobile";
+                    getFile(this.mobileTemplate, function (response) {                    
+                        var mobileTemplate = doT.template(response);                          
+                        if(window.$compass.dataTemplate != null) {                            
+                            getFile(window.$compass.dataTemplate, function (dtresponse) {                                
+                                var mobdata = JSON.parse(dtresponse);
+                                $compass.data = {};
+                                for (var key in mobdata) {
+                                  if (mobdata.hasOwnProperty(key)) {
+                                      $compass.data[key] = $(mobdata[key])[0].innerHTML;
+                                  }
+                                }                             
+                                renderMobileTemplate(mobileTemplate, $compass.data);
+                            });
+                        } else {                        
+                            renderMobileTemplate(mobileTemplate, null);
+                        }                                           
                     });
                 } else {
                     window.document.documentElement.innerHTML= this.mobilePage;
                     this.renderedView = "mobile";
+                    setTimeout(function () {
+                        window.document.body.style.display="block";
+                    },0);
                 }
             } else {
-                if(this.renderedView != "desktop") {
+                if(window.$compass.renderedView != "desktop") {
                     document.documentElement.innerHTML = this.originalPage;
-                    this.renderedView = "desktop";
-                }
-            }
+                    window.$compass.renderedView = "desktop";                    
+                }                                
+            }   
+            window.document.body.style.display="block";
         }
     };
     window.$compass = $compass.fn;
 })(window);
 
-
-script.onload = function() {
-    window.onhashchange = function () {
-        $compass.process();
-    } 
-    $compass.originalPage = document.documentElement.innerHTML;
-    $compass.data = {"ryan":"iscool"};
-    //$compass.renderedView = "desktop";
-    $compass.process();
-};
-
-
-
+function renderMobileTemplate(template, data) {
+    var mobileOutput = template(data);                    
+    var mobileDoc = (new DOMParser).parseFromString(mobileOutput, 'text/html');
+    window.$compass.mobilePage = mobileDoc.documentElement.innerHTML;
+    window.document.documentElement.innerHTML= mobileDoc.documentElement.innerHTML;
+    window.$compass.renderedView = "mobile";   
+    setTimeout(function () {
+        window.document.body.style.display="block";
+    },0); 
+}
 
 function getFile(url, completeCallback) {
     setTimeout(function () {
@@ -109,6 +120,7 @@ function getFile(url, completeCallback) {
         }
     }, 0);
 }
+
 
 /* 
  * DOMParser HTML extension 
@@ -156,3 +168,14 @@ function getFile(url, completeCallback) {
         }  
     };  
 }(DOMParser));
+
+script.onload = function() {
+    window.onhashchange = function () {
+        $compass.process();
+    }         
+    $compass.originalPage = document.documentElement.innerHTML;
+    $compass.process();
+};
+
+
+
