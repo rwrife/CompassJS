@@ -1,15 +1,8 @@
-if(!window.jQuery) {
+if(!window.angular) {
     var script=document.createElement('script');
     script.setAttribute("type","text/javascript");
-    script.setAttribute("src", "jqlite.js");
+    script.setAttribute("src", "//ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.7/angular.min.js");
     document.getElementsByTagName("head")[0].appendChild(script);    
-}
-
-if(!window.doT) {
-    var script=document.createElement('script');
-    script.setAttribute("type","text/javascript");
-    script.setAttribute("src", "doT.js");
-    document.getElementsByTagName("head")[0].appendChild(script);
 }
 
 var style=document.createElement('style');
@@ -17,7 +10,7 @@ style.innerHTML="body { display:none;}";
 document.getElementsByTagName("head")[0].appendChild(style);
 
 (function (window, undefined) {    
-    var $compass = function () {
+    var $compass = function () {                       
         if ( window === this ) {            
             return new $compass(); 
         }
@@ -25,12 +18,13 @@ document.getElementsByTagName("head")[0].appendChild(style);
     };
     
     $compass.fn = $compass.prototype = {
+        el: null,
         mobileTemplate: null,
         dataTemplate: null,
-        data: null,
+        scope: null,
         originalPage: null,
         mobilePage: null,
-        hideStyle: null,
+        hideStyle: null,        
         renderedView: "desktop",
         getElement: function(selector) {
             if (typeof properties === 'string') {
@@ -63,14 +57,14 @@ document.getElementsByTagName("head")[0].appendChild(style);
             if((window.$compass.isMobile() || window.$compass.getParam().$c == "mobile") && window.$compass.renderedView != "mobile" && window.$compass.getParam().$c != "desktop") {              
                 if(window.$compass.mobilePage == null) {
                     getFile(this.mobileTemplate, function (response) {                    
-                        var mobileTemplate = doT.template(response);                          
+                        var mobileTemplate = response;
                         if(window.$compass.dataTemplate != null) {                            
                             getFile(window.$compass.dataTemplate, function (dtresponse) {                                
                                 var mobdata = JSON.parse(dtresponse);
                                 $compass.data = {};
                                 for (var key in mobdata) {
                                   if (mobdata.hasOwnProperty(key)) {
-                                      $compass.data[key] = $(mobdata[key])[0].innerHTML;
+                                      $compass.data[key] = angular.element(document.querySelector(mobdata[key]))[0].innerHTML;
                                   }
                                 }                             
                                 renderMobileTemplate(mobileTemplate, $compass.data);
@@ -98,8 +92,10 @@ document.getElementsByTagName("head")[0].appendChild(style);
     window.$compass = $compass.fn;
 })(window);
 
+
 function renderMobileTemplate(template, data) {
-    var mobileOutput = template(data);                    
+    var $sC = angular.element($compass.el).scope();
+    var mobileOutput = $sC.render(template, data);
     var mobileDoc = (new DOMParser).parseFromString(mobileOutput, 'text/html');
     window.$compass.mobilePage = mobileDoc.documentElement.innerHTML;
     window.document.documentElement.innerHTML= mobileDoc.documentElement.innerHTML;
@@ -120,6 +116,36 @@ function getFile(url, completeCallback) {
         }
     }, 0);
 }
+
+script.onload = function() {
+    angular.element(document).ready(function () {   
+        $compass.el = document.createElement("div");
+        $compass.el.setAttribute("ng-controller",'$compass');
+        document.body.appendChild($compass.el);
+        angular.bootstrap(document, ['$compassApp']);
+    });            
+    angular.module('$compassApp', [])
+    .controller('$compass', function ($scope, $compile) {
+        $scope.render = function (template, data) {
+            var $compassScope = $scope.$new(true);
+            for (var key in data) {
+              if (data.hasOwnProperty(key)) {
+                  $compassScope[key] = data[key];
+              }
+            }
+            var x = $compile("<compass>" + template + "</compass>")($compassScope);
+            $compassScope.$apply();     
+            return x[0].innerHTML;
+        }
+    }); 
+    
+    window.onhashchange = function () {
+        $compass.process();
+    }         
+    $compass.originalPage = document.documentElement.innerHTML;
+    $compass.process();
+};
+
 
 
 /* 
@@ -168,14 +194,3 @@ function getFile(url, completeCallback) {
         }  
     };  
 }(DOMParser));
-
-script.onload = function() {
-    window.onhashchange = function () {
-        $compass.process();
-    }         
-    $compass.originalPage = document.documentElement.innerHTML;
-    $compass.process();
-};
-
-
-
